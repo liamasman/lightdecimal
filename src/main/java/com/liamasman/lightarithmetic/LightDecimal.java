@@ -4,33 +4,6 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
-    public static final long[] POWERS_OF_10 = new long[]{
-            1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L,
-            100000000L, 1000000000L, 10000000000L, 100000000000L,
-            1000000000000L, 10000000000000L, 100000000000000L, 1000000000000000L,
-            10000000000000000L, 100000000000000000L, 1000000000000000000L
-    };
-    private static final long[] POWERS_OF_TEN = {
-            1L,
-            10L,
-            100L,
-            1000L,
-            10000L,
-            100000L,
-            1000000L,
-            10000000L,
-            100000000L,
-            1000000000L,
-            10000000000L,
-            100000000000L,
-            1000000000000L,
-            10000000000000L,
-            100000000000000L,
-            1000000000000000L,
-            10000000000000000L,
-            100000000000000000L
-    };
-
     private static final double LOG_TWO_BASE_TEN = Math.log(2.0) / Math.log(10.0);
 
     /*
@@ -253,16 +226,6 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
 
     public int signum() {
         return signum;
-    }
-
-    private boolean isZero()
-    {
-        return signum() == 0;
-    }
-
-    private boolean isNegative()
-    {
-        return (bytes0 & 0x8000000000000000L) != 0;
     }
 
     public BigDecimal toBigDecimal() {
