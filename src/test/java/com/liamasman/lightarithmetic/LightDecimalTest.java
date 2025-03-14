@@ -1,5 +1,6 @@
 package com.liamasman.lightarithmetic;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -178,5 +179,23 @@ class LightDecimalTest {
         assertThrows(NumberFormatException.class, () -> new LightDecimal(" 1"), "Should not allow whitespace at start");
         assertThrows(NumberFormatException.class, () -> new LightDecimal("1 "), "Should not allow whitespace at end");
         assertThrows(NumberFormatException.class, () -> new LightDecimal(" 1 "), "Should not allow whitespace around number");
+    }
+
+    @Nested
+    class mutableAddTest {
+        @Test
+        void add_positive_values_of_same_scale() {
+            assertEquals(new LightDecimal("4"), new LightDecimal("2").add(new LightDecimal("2")));
+            assertEquals(new LightDecimal("4.0"), new LightDecimal("2.0").add(new LightDecimal("2.0")));
+            assertEquals(new LightDecimal("4.00"), new LightDecimal("2.00").add(new LightDecimal("2.00")));
+            assertEquals(new LightDecimal("137.314"), new LightDecimal("137.000").add(new LightDecimal("0.314")));
+            assertEquals(new LightDecimal(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 1, 1),
+                    new LightDecimal(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 1, 1).add(new LightDecimal(0L, 0L, 0L, 0L, 0, 1)));
+            assertEquals(new LightDecimal(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 1, 1),
+                    new LightDecimal(0xFFFFFFFFFFFFFFFFL, 0x0L, 0xFFFFFFFFFFFFFFFFL, 0x0L, 1, 1).add(new LightDecimal(0x0L, 0xFFFFFFFFFFFFFFFFL, 0, 0xFFFFFFFFFFFFFFFFL, 1, 1)));
+            assertEquals(new LightDecimal(0x8000000000000000L, 0x0L, 0x0L, 0x0L, 1, 20),
+                    new LightDecimal(0x7FFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 1, 20).add(new LightDecimal(0L, 0L, 0L, 1L, 1, 20)));
+
+        }
     }
 }

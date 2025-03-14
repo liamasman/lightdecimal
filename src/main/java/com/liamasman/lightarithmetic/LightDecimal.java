@@ -109,7 +109,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         scale = lightDecimal.scale;
     }
 
-    private LightDecimal(long bytes0, long bytes1, long bytes2, long bytes3, int signum, int scale) {
+    LightDecimal(long bytes0, long bytes1, long bytes2, long bytes3, int signum, int scale) {
         this.bytes0 = bytes0;
         this.bytes1 = bytes1;
         this.bytes2 = bytes2;
@@ -123,7 +123,62 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return this;
     }
 
-    public LightDecimal add(LightDecimal lightDecimal) {
+    public LightDecimal add(LightDecimal val) {
+
+        // Long addition using 32-bit words
+        long carry = 0;
+        long highBits;
+        long highBitsVal;
+        long lowBits;
+        long lowBitsVal;
+
+        //byte 3
+        highBits = bytes3 >>> 32;
+        lowBits = bytes3 & 0xFFFFFFFFL;
+        highBitsVal = val.bytes3 >>> 32;
+        lowBitsVal = val.bytes3 & 0xFFFFFFFFL;
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        bytes3 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+
+        //byte 2
+        highBits = bytes2 >>> 32;
+        lowBits = bytes2 & 0xFFFFFFFFL;
+        highBitsVal = val.bytes2 >>> 32;
+        lowBitsVal = val.bytes2 & 0xFFFFFFFFL;
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        bytes2 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+
+        //byte 1
+        highBits = bytes1 >>> 32;
+        lowBits = bytes1 & 0xFFFFFFFFL;
+        highBitsVal = val.bytes1 >>> 32;
+        lowBitsVal = val.bytes1 & 0xFFFFFFFFL;
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        bytes1 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+
+        //byte 0
+        highBits = bytes0 >>> 32;
+        lowBits = bytes0 & 0xFFFFFFFFL;
+        highBitsVal = val.bytes0 >>> 32;
+        lowBitsVal = val.bytes0 & 0xFFFFFFFFL;
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        if (carry != 0) {
+            throw new ArithmeticException("Overflow");
+        }
+        bytes0 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+
         return this;
     }
 
