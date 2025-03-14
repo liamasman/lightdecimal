@@ -2,7 +2,9 @@ package com.liamasman.lightarithmetic;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.math.BigDecimal;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LightDecimalTest {
 
@@ -83,5 +85,84 @@ class LightDecimalTest {
         assertEquals("-12000", new LightDecimal("-000012000").toString());
         assertEquals("-12000.00", new LightDecimal("-000012000.00").toString());
         assertEquals("-12000.0650", new LightDecimal("-000012000.0650").toString());
+    }
+    
+    @Test
+    void toBigDecimalTest() {
+        assertEquals(new BigDecimal("0"), new LightDecimal("0").toBigDecimal());
+        assertEquals(new BigDecimal("1"), new LightDecimal("1").toBigDecimal());
+        assertEquals(new BigDecimal("1.1"), new LightDecimal("1.1").toBigDecimal());
+        assertEquals(new BigDecimal("1.01"), new LightDecimal("1.01").toBigDecimal());
+        assertEquals(new BigDecimal("1.001"), new LightDecimal("1.001").toBigDecimal());
+        assertEquals(new BigDecimal("1.100000000000000001"), new LightDecimal("1.100000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("1.1000000000000000011"), new LightDecimal("1.1000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("1.10000000000000000111"), new LightDecimal("1.10000000000000000111").toBigDecimal());
+        assertEquals(new BigDecimal("1.10000000000000000011"), new LightDecimal("1.10000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("1.10000000000000000101"), new LightDecimal("1.10000000000000000101").toBigDecimal());
+        assertEquals(new BigDecimal("1.1000000000000000001"), new LightDecimal("1.1000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("1.10000000000000000001"), new LightDecimal("1.10000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("0.100000000000000001"), new LightDecimal("0.100000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("0.1000000000000000011"), new LightDecimal("0.1000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("0.10000000000000000111"), new LightDecimal("0.10000000000000000111").toBigDecimal());
+        assertEquals(new BigDecimal("0.10000000000000000011"), new LightDecimal("0.10000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("0.10000000000000000101"), new LightDecimal("0.10000000000000000101").toBigDecimal());
+        assertEquals(new BigDecimal("0.1000000000000000001"), new LightDecimal("0.1000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("0.10000000000000000001"), new LightDecimal("0.10000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("1.000000000000000001"), new LightDecimal("1.000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("1.0000000000000000011"), new LightDecimal("1.0000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("1.00000000000000000111"), new LightDecimal("1.00000000000000000111").toBigDecimal());
+        assertEquals(new BigDecimal("1.00000000000000000011"), new LightDecimal("1.00000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("1.00000000000000000101"), new LightDecimal("1.00000000000000000101").toBigDecimal());
+        assertEquals(new BigDecimal("1.0000000000000000001"), new LightDecimal("1.0000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("1.00000000000000000001"), new LightDecimal("1.00000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("0.000000000000000001"), new LightDecimal("0.000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("0.0000000000000000011"), new LightDecimal("0.0000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("0.00000000000000000111"), new LightDecimal("0.00000000000000000111").toBigDecimal());
+        assertEquals(new BigDecimal("0.00000000000000000011"), new LightDecimal("0.00000000000000000011").toBigDecimal());
+        assertEquals(new BigDecimal("0.00000000000000000101"), new LightDecimal("0.00000000000000000101").toBigDecimal());
+        assertEquals(new BigDecimal("0.0000000000000000001"), new LightDecimal("0.0000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("0.00000000000000000001"), new LightDecimal("0.00000000000000000001").toBigDecimal());
+        assertEquals(new BigDecimal("123"), new LightDecimal("123").toBigDecimal());
+        assertEquals(new BigDecimal("123.456"), new LightDecimal("123.456").toBigDecimal());
+        assertEquals(new BigDecimal("-42"), new LightDecimal("-42").toBigDecimal());
+        assertEquals(new BigDecimal("-42.75"), new LightDecimal("-42.75").toBigDecimal());
+        assertEquals(new BigDecimal("0.5"), new LightDecimal("0.5").toBigDecimal());
+        assertEquals(new BigDecimal("-0.125"), new LightDecimal("-0.125").toBigDecimal());
+        assertEquals(new BigDecimal("9007199254740992.5"), new LightDecimal("9007199254740992.5").toBigDecimal());
+        assertEquals(new BigDecimal("0.33333333333333333333"), new LightDecimal("0.33333333333333333333").toBigDecimal());
+        assertEquals(new BigDecimal("123456789012345.12345678901234567891"), new LightDecimal("123456789012345.12345678901234567891").toBigDecimal());
+        assertEquals(new BigDecimal("1.00"), new LightDecimal("1.00").toBigDecimal());
+        assertEquals(new BigDecimal("1.10"), new LightDecimal("1.10").toBigDecimal());
+        assertEquals(new BigDecimal("10.00"), new LightDecimal("10.00").toBigDecimal());
+        assertEquals(new BigDecimal("01"), new LightDecimal("01").toBigDecimal());
+        assertEquals(new BigDecimal("01.0"), new LightDecimal("01.0").toBigDecimal());
+        assertEquals(new BigDecimal("00.00"), new LightDecimal("00.00").toBigDecimal());
+        assertEquals(new BigDecimal("0000"), new LightDecimal("0000").toBigDecimal());
+        assertEquals(new BigDecimal("00.00005300"), new LightDecimal("00.00005300").toBigDecimal());
+        assertEquals(new BigDecimal("500000"), new LightDecimal("500000").toBigDecimal());
+        assertEquals(new BigDecimal("500000.0"), new LightDecimal("500000.0").toBigDecimal());
+        assertEquals(new BigDecimal("00512"), new LightDecimal("00512").toBigDecimal());
+        assertEquals(new BigDecimal("00512.0"), new LightDecimal("00512.0").toBigDecimal());
+        assertEquals(new BigDecimal("0000042.635400"), new LightDecimal("0000042.635400").toBigDecimal());
+        assertEquals(new BigDecimal("000012000"), new LightDecimal("000012000").toBigDecimal());
+        assertEquals(new BigDecimal("000012000.00"), new LightDecimal("000012000.00").toBigDecimal());
+        assertEquals(new BigDecimal("000012000.0650"), new LightDecimal("000012000.0650").toBigDecimal());
+        assertEquals(new BigDecimal("-1.00"), new LightDecimal("-1.00").toBigDecimal());
+        assertEquals(new BigDecimal("-1.10"), new LightDecimal("-1.10").toBigDecimal());
+        assertEquals(new BigDecimal("-10.00"), new LightDecimal("-10.00").toBigDecimal());
+        assertEquals(new BigDecimal("-01"), new LightDecimal("-01").toBigDecimal());
+        assertEquals(new BigDecimal("-01.0"), new LightDecimal("-01.0").toBigDecimal());
+        assertEquals(new BigDecimal("-00.00"), new LightDecimal("-00.00").toBigDecimal());
+        assertEquals(new BigDecimal("-0.00"), new LightDecimal("-0.00").toBigDecimal());
+        assertEquals(new BigDecimal("-0"), new LightDecimal("-0").toBigDecimal());
+        assertEquals(new BigDecimal("-00.00005300"), new LightDecimal("-00.00005300").toBigDecimal());
+        assertEquals(new BigDecimal("-500000"), new LightDecimal("-500000").toBigDecimal());
+        assertEquals(new BigDecimal("-500000.0"), new LightDecimal("-500000.0").toBigDecimal());
+        assertEquals(new BigDecimal("-00512"), new LightDecimal("-00512").toBigDecimal());
+        assertEquals(new BigDecimal("-00512.0"), new LightDecimal("-00512.0").toBigDecimal());
+        assertEquals(new BigDecimal("-0000042.635400"), new LightDecimal("-0000042.635400").toBigDecimal());
+        assertEquals(new BigDecimal("-000012000"), new LightDecimal("-000012000").toBigDecimal());
+        assertEquals(new BigDecimal("-000012000.00"), new LightDecimal("-000012000.00").toBigDecimal());
+        assertEquals(new BigDecimal("-000012000.0650"), new LightDecimal("-000012000.0650").toBigDecimal());
     }
 }
