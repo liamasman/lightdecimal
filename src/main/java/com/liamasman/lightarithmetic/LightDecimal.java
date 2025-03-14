@@ -18,13 +18,16 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private long bytes3;
     private int signum;
     private int scale;
-    private int precision;
 
     public LightDecimal(final CharSequence in) {
         this(in, 0, in.length());
     }
 
     public LightDecimal(final CharSequence in, final int offset, final int len) {
+        if (len == 0) {
+            throw new NumberFormatException("Empty input.");
+        }
+
         try {
             Objects.checkFromIndexSize(offset, len, in.length());
         } catch (IndexOutOfBoundsException e) {
@@ -37,6 +40,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
             int cursor = offset;
             int length = len;
             boolean isNegative = false;
+            int digitsSeen = 0;
 
             // Handle the sign
             if (in.charAt(cursor) == '-') {
@@ -51,25 +55,13 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
             // Handle numeric part
             boolean dot = false;        // true if decimal point seen
             char c;                     // current character
-
             for (; length > 0; cursor++, length--) {
                 c = in.charAt(cursor);
 
                 if ((c >= '0' && c <= '9') || Character.isDigit(c)) {
                     int characterValue = Character.digit(c, 10);
-                    if (characterValue == 0) {
-                        if (precision == 0) {
-                            precision = 1;
-                        } else {
-                            multiplyBy10AndAdd(characterValue);
-                            ++precision;
-                        }
-                    } else {
-                        if (precision != 1) {
-                            ++precision;
-                        }
-                        multiplyBy10AndAdd(characterValue);
-                    }
+                    multiplyBy10AndAdd(characterValue);
+                    ++digitsSeen;
                     if (dot) {
                         tmpScale++;
                     }
@@ -83,11 +75,11 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
                     continue;
                 }
                 // TODO handle exponents?
-                break; //saves a test
+                throw new NumberFormatException("Unexpected character: " + c);
             }
 
             //All characters processed
-            if (precision == 0) {
+            if (digitsSeen == 0) {
                 throw new NumberFormatException("No digits found.");
             }
 
@@ -108,79 +100,27 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         scale = (int) tmpScale;
     }
 
-    private static void toIntegerString(final StringBuilder sb, final long bytes0, final long bytes1, final long bytes2, final long bytes3) {
-        // Long division
-        long highBytes0 = bytes0 >>> 32;
-        long lowBytes0 = bytes0 & 0xFFFFFFFFL;
-        long highBytes1 = bytes1 >>> 32;
-        long lowBytes1 = bytes1 & 0xFFFFFFFFL;
-        long highBytes2 = bytes2 >>> 32;
-        long lowBytes2 = bytes2 & 0xFFFFFFFFL;
-        long highBytes3 = bytes3 >>> 32;
-        long lowBytes3 = bytes3 & 0xFFFFFFFFL;
-
-        while ((highBytes0 | lowBytes0 | highBytes1 | lowBytes1 | highBytes2 | lowBytes2 | highBytes3 | lowBytes3) != 0) {
-            long remainder;
-            long temp;
-
-            temp = highBytes0;
-            highBytes0 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, highBytes0);
-
-            temp = (remainder << 32) | lowBytes0;
-            lowBytes0 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, lowBytes0);
-
-            temp = (remainder << 32) | highBytes1;
-            highBytes1 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, highBytes1);
-
-            temp = (remainder << 32) | lowBytes1;
-            lowBytes1 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, lowBytes1);
-
-            temp = (remainder << 32) | highBytes2;
-            highBytes2 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, highBytes2);
-
-            temp = (remainder << 32) | lowBytes2;
-            lowBytes2 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, lowBytes2);
-
-            temp = (remainder << 32) | highBytes3;
-            highBytes3 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, highBytes3);
-
-            temp = (remainder << 32) | lowBytes3;
-            lowBytes3 = Long.divideUnsigned(temp, 10);
-            remainder = remainderUnsignedDividedBy10(temp, lowBytes3);
-
-            sb.append((char) ('0' + remainder));
-        }
-        sb.reverse();
-    }
-
-    public LightDecimal negate() {
-        signum *= -1;
-        return this;
-    }
-
     public LightDecimal(final LightDecimal lightDecimal) {
         bytes0 = lightDecimal.bytes0;
         bytes1 = lightDecimal.bytes1;
         bytes2 = lightDecimal.bytes2;
         bytes3 = lightDecimal.bytes3;
+        signum = lightDecimal.signum;
         scale = lightDecimal.scale;
-        precision = lightDecimal.precision;
     }
 
-    private LightDecimal(long bytes0, long bytes1, long bytes2, long bytes3, int scale, int precision) {
+    private LightDecimal(long bytes0, long bytes1, long bytes2, long bytes3, int signum, int scale) {
         this.bytes0 = bytes0;
         this.bytes1 = bytes1;
         this.bytes2 = bytes2;
         this.bytes3 = bytes3;
+        this.signum = signum;
         this.scale = scale;
-        this.precision = precision;
+    }
+
+    public LightDecimal negate() {
+        signum *= -1;
+        return this;
     }
 
     public LightDecimal add(LightDecimal lightDecimal) {
@@ -296,8 +236,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
                 bytes2 == other.bytes2 &&
                 bytes1 == other.bytes1 &&
                 bytes0 == other.bytes0 &&
-                scale == other.scale &&
-                precision == other.precision;
+                scale == other.scale;
     }
 
     @Override
@@ -306,8 +245,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
                 Long.hashCode(bytes2) ^
                 Long.hashCode(bytes1) ^
                 Long.hashCode(bytes0) ^
-                Integer.hashCode(scale) ^
-                Integer.hashCode(precision);
+                Integer.hashCode(scale);
     }
 
     @Override
@@ -321,6 +259,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
 
         final StringBuilder sb = new StringBuilder(numChars);
         if (b <= 63) {
+            // Significand is stored in a single long, so no need to do long division
             sb.append(bytes3);
         } else {
             toIntegerString(sb, bytes0, bytes1, bytes2, bytes3);
@@ -353,6 +292,58 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
             }
         }
         return sb.toString();
+    }
+
+    private static void toIntegerString(final StringBuilder sb, final long bytes0, final long bytes1, final long bytes2, final long bytes3) {
+        // Long division on 32-bit words
+        long highBytes0 = bytes0 >>> 32;
+        long lowBytes0 = bytes0 & 0xFFFFFFFFL;
+        long highBytes1 = bytes1 >>> 32;
+        long lowBytes1 = bytes1 & 0xFFFFFFFFL;
+        long highBytes2 = bytes2 >>> 32;
+        long lowBytes2 = bytes2 & 0xFFFFFFFFL;
+        long highBytes3 = bytes3 >>> 32;
+        long lowBytes3 = bytes3 & 0xFFFFFFFFL;
+
+        while ((highBytes0 | lowBytes0 | highBytes1 | lowBytes1 | highBytes2 | lowBytes2 | highBytes3 | lowBytes3) != 0) {
+            long remainder;
+            long temp;
+
+            temp = highBytes0;
+            highBytes0 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, highBytes0);
+
+            temp = (remainder << 32) | lowBytes0;
+            lowBytes0 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, lowBytes0);
+
+            temp = (remainder << 32) | highBytes1;
+            highBytes1 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, highBytes1);
+
+            temp = (remainder << 32) | lowBytes1;
+            lowBytes1 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, lowBytes1);
+
+            temp = (remainder << 32) | highBytes2;
+            highBytes2 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, highBytes2);
+
+            temp = (remainder << 32) | lowBytes2;
+            lowBytes2 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, lowBytes2);
+
+            temp = (remainder << 32) | highBytes3;
+            highBytes3 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, highBytes3);
+
+            temp = (remainder << 32) | lowBytes3;
+            lowBytes3 = Long.divideUnsigned(temp, 10);
+            remainder = remainderUnsignedDividedBy10(temp, lowBytes3);
+
+            sb.append((char) ('0' + remainder));
+        }
+        sb.reverse();
     }
 
     public BigDecimal toBigDecimal() {

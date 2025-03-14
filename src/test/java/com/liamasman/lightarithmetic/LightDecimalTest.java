@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LightDecimalTest {
 
@@ -85,6 +86,9 @@ class LightDecimalTest {
         assertEquals("-12000", new LightDecimal("-000012000").toString());
         assertEquals("-12000.00", new LightDecimal("-000012000.00").toString());
         assertEquals("-12000.0650", new LightDecimal("-000012000.0650").toString());
+        assertEquals("473749274975984758436738476456.3523723748237424536644363", new LightDecimal("473749274975984758436738476456.3523723748237424536644363").toString());
+        assertEquals("0.1", new LightDecimal(".1").toString());
+        assertEquals("1", new LightDecimal("1.").toString());
     }
     
     @Test
@@ -164,5 +168,15 @@ class LightDecimalTest {
         assertEquals(new BigDecimal("-000012000"), new LightDecimal("-000012000").toBigDecimal());
         assertEquals(new BigDecimal("-000012000.00"), new LightDecimal("-000012000.00").toBigDecimal());
         assertEquals(new BigDecimal("-000012000.0650"), new LightDecimal("-000012000.0650").toBigDecimal());
+    }
+
+    @Test
+    void constructFromStringTest() {
+        assertThrows(NumberFormatException.class, () -> new LightDecimal("1.1.1"), "Should not allow multiple decimal points");
+        assertThrows(NumberFormatException.class, () -> new LightDecimal(""), "Should not allow empty string");
+        assertThrows(NumberFormatException.class, () -> new LightDecimal(" "), "Should not allow blank");
+        assertThrows(NumberFormatException.class, () -> new LightDecimal(" 1"), "Should not allow whitespace at start");
+        assertThrows(NumberFormatException.class, () -> new LightDecimal("1 "), "Should not allow whitespace at end");
+        assertThrows(NumberFormatException.class, () -> new LightDecimal(" 1 "), "Should not allow whitespace around number");
     }
 }
