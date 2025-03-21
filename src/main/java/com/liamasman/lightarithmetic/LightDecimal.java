@@ -182,8 +182,12 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return this;
     }
 
+    /**
+     * Returns a new LightDecimal whose value is the sum of the two
+     * operands. The original operands are not modified.
+     */
     public static LightDecimal add(LightDecimal a, LightDecimal b) {
-        return null;
+        return new LightDecimal(a).add(b);
     }
 
     public LightDecimal subtract(LightDecimal lightDecimal) {
@@ -191,7 +195,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     }
 
     public static LightDecimal subtract(LightDecimal a, LightDecimal b) {
-        return null;
+        return new LightDecimal(a).subtract(b);
     }
 
     public LightDecimal multiply(LightDecimal lightDecimal) {
@@ -199,7 +203,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     }
 
     public static LightDecimal multiply(LightDecimal a, LightDecimal b) {
-        return null;
+        return new LightDecimal(a).multiply(b);
     }
 
     public LightDecimal divide(LightDecimal lightDecimal) {
@@ -207,23 +211,23 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     }
 
     public static LightDecimal divide(LightDecimal a, LightDecimal b) {
-        return null;
+        return new LightDecimal(a).divide(b);
     }
 
-    public LightDecimal min(LightDecimal lightDecimal) {
-        return this;
+    public LightDecimal min(LightDecimal other) {
+        return this.compareTo(other) >= 0 ? other : this;
     }
 
     public static LightDecimal min(LightDecimal a, LightDecimal b) {
-        return null;
+        return a.compareTo(b) >= 0 ? a : b;
     }
 
-    public LightDecimal max(LightDecimal lightDecimal) {
-        return this;
+    public LightDecimal max(LightDecimal other) {
+        return this.compareTo(other) <= 0 ? other : this;
     }
 
     public static LightDecimal max(LightDecimal a, LightDecimal b) {
-        return null;
+        return a.compareTo(b) <= 0 ? a : b;
     }
 
     public int signum() {
