@@ -185,6 +185,8 @@ class LightDecimalTest {
     class mutableAddTest {
         @Test
         void add_positive_values_of_same_scale() {
+            assertAdd("0", "0", "0");
+            assertAdd("1", "1", "0");
             assertAdd("6", "4", "2");
             assertAdd("6.0", "4.0", "2.0");
             assertAdd("6.00", "4.00", "2.00");
@@ -206,6 +208,7 @@ class LightDecimalTest {
         @Test
         void add_negative_values_of_same_scale()
         {
+            assertAdd("-1", "-1", "0");
             assertAdd("-6", "-2", "-4");
             assertAdd("-6.0", "-2.0", "-4.0");
             assertAdd("-6.7", "-2.2", "-4.5");
@@ -214,15 +217,34 @@ class LightDecimalTest {
             assertAdd("-126.842344", "-126.000000", "-0.842344");
         }
 
+        @Test
+        void add_opposite_signs_of_same_scale() {
+            assertAdd("0", "1", "-1");
+            assertAdd("0.00", "-3.45", "3.45");
+            assertAdd("-2", "2", "-4");
+            assertAdd("2", "-2", "4");
+            assertAdd("77.021", "78.342", "-1.321");
+            assertAdd("-77.021", "-78.342", "1.321");
+            assertAdd("0.00000000000000000000", "-0.00000000000000000001", "0.00000000000000000001");
+            assertAdd("-0.00000000000000000002", "0.00000000000000000001", "-0.00000000000000000003");
+            assertAdd("-15495694344618058519.50025048496593210042",
+                    "-49783459797852745754.23872346872436782367",
+                    "34287765453234687234.73847298375843572325");
+            assertAdd("-25298359503841384045043476902.017610388074041301171654248122",
+                    "38547252749823759872395872745.476582736872365874658236593845",
+                    "-13248893245982375827352395843.458972348798324573486582345723");
+        }
+
         private static void assertAdd(final String expected, final String a, final String b)
         {
-            assertEquals(new LightDecimal(expected), new LightDecimal(a).add(new LightDecimal(b)));
+            assertEquals(new LightDecimal(expected), new LightDecimal(a).add(new LightDecimal(b)), () -> a + " + " + b);
+            assertEquals(new LightDecimal(expected), new LightDecimal(b).add(new LightDecimal(a)), () -> b + " + " + a);
         }
 
         private static void assertAdd(final LightDecimal expected, final LightDecimal a, final LightDecimal b)
         {
-            assertEquals(expected, new LightDecimal(a).add(b));
-            assertEquals(expected, new LightDecimal(b).add(a));
+            assertEquals(expected, new LightDecimal(a).add(b), () -> a + " + " + b);
+            assertEquals(expected, new LightDecimal(b).add(a), () -> b + " + " + a);
         }
     }
 }

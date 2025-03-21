@@ -6,6 +6,12 @@ import java.util.Objects;
 
 public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private static final double LOG_TWO_BASE_TEN = Math.log(2.0) / Math.log(10.0);
+    private static final long ALL_BUT_SIGN_BIT_MAX = Long.MAX_VALUE;
+    private static final long HIGH_MASK = 0xFFFFFFFFL << 32;
+    private static final long LOW_MASK = 0xFFFFFFFFL;
+
+    // private so no one else mutates it. ** NEVER RETURN THIS OBJECT **
+    private static final LightDecimal ZERO = new LightDecimal(0, 0, 0, 0, 0, 0);
 
     /*
      * Stores the significand as an integer in big-endian format, where bytes3
@@ -118,13 +124,39 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         this.scale = scale;
     }
 
+    public void copyFrom(final LightDecimal val) {
+        bytes0 = val.bytes0;
+        bytes1 = val.bytes1;
+        bytes2 = val.bytes2;
+        bytes3 = val.bytes3;
+        signum = val.signum;
+        scale = val.scale;
+    }
+
     public LightDecimal negate() {
         signum *= -1;
         return this;
     }
 
     public LightDecimal add(LightDecimal val) {
+        if (val.signum == 0) {
+            return this;
+        }
+        if (signum == 0) {
+            copyFrom(val);
+            return this;
+        }
+        if (val.signum == signum) {
+            addSameScaleSameSignum(val);
+            return this;
+        } else {
+            addSameScaleDifferentSignum(val);
+        }
 
+        return this;
+    }
+
+    private void addSameScaleSameSignum(final LightDecimal val) {
         // Long addition using 32-bit words
         long carry = 0;
         long highBits;
@@ -133,43 +165,43 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         long lowBitsVal;
 
         //byte 3
-        highBits = bytes3 >>> 32;
-        lowBits = bytes3 & 0xFFFFFFFFL;
-        highBitsVal = val.bytes3 >>> 32;
-        lowBitsVal = val.bytes3 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes3);
+        lowBits = getLowBits(bytes3);
+        highBitsVal = getHighBits(val.bytes3);
+        lowBitsVal = getLowBits(val.bytes3);
         lowBits = lowBits + lowBitsVal + carry;
         carry = lowBits >>> 32;
         highBits = highBits + highBitsVal + carry;
         carry = highBits >>> 32;
-        bytes3 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes3 = (highBits << 32) | (lowBits & LOW_MASK);
 
         //byte 2
-        highBits = bytes2 >>> 32;
-        lowBits = bytes2 & 0xFFFFFFFFL;
-        highBitsVal = val.bytes2 >>> 32;
-        lowBitsVal = val.bytes2 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes2);
+        lowBits = getLowBits(bytes2);
+        highBitsVal = getHighBits(val.bytes2);
+        lowBitsVal = getLowBits(val.bytes2);
         lowBits = lowBits + lowBitsVal + carry;
         carry = lowBits >>> 32;
         highBits = highBits + highBitsVal + carry;
         carry = highBits >>> 32;
-        bytes2 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes2 = (highBits << 32) | (lowBits & LOW_MASK);
 
         //byte 1
-        highBits = bytes1 >>> 32;
-        lowBits = bytes1 & 0xFFFFFFFFL;
-        highBitsVal = val.bytes1 >>> 32;
-        lowBitsVal = val.bytes1 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes1);
+        lowBits = getLowBits(bytes1);
+        highBitsVal = getHighBits(val.bytes1);
+        lowBitsVal = getLowBits(val.bytes1);
         lowBits = lowBits + lowBitsVal + carry;
         carry = lowBits >>> 32;
         highBits = highBits + highBitsVal + carry;
         carry = highBits >>> 32;
-        bytes1 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes1 = (highBits << 32) | (lowBits & LOW_MASK);
 
         //byte 0
-        highBits = bytes0 >>> 32;
-        lowBits = bytes0 & 0xFFFFFFFFL;
-        highBitsVal = val.bytes0 >>> 32;
-        lowBitsVal = val.bytes0 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes0);
+        lowBits = getLowBits(bytes0);
+        highBitsVal = getHighBits(val.bytes0);
+        lowBitsVal = getLowBits(val.bytes0);
         lowBits = lowBits + lowBitsVal + carry;
         carry = lowBits >>> 32;
         highBits = highBits + highBitsVal + carry;
@@ -177,10 +209,127 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         if (carry != 0) {
             throw new ArithmeticException("Overflow");
         }
-        bytes0 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
-
-        return this;
+        bytes0 = (highBits << 32) | (lowBits & LOW_MASK);
     }
+
+    private static long getHighBits(long bytes) {
+        return bytes >>> 32;
+    }
+
+    private static long getLowBits(long bytes) {
+        return bytes & LOW_MASK;
+    }
+
+    private void addSameScaleDifferentSignum(LightDecimal val) {
+        int cmp = compareMagnitude(val);
+        if (cmp == 0) {
+            int scale = this.scale;
+            copyFrom(ZERO);
+            this.scale = scale;
+            return;
+        }
+
+        if (cmp > 0) //This is the bigger number
+        {
+            subtractBytes(val.bytes0, val.bytes1, val.bytes2, val.bytes3);
+        } else {
+            long tmp0 = bytes0;
+            long tmp1 = bytes1;
+            long tmp2 = bytes2;
+            long tmp3 = bytes3;
+            bytes0 = val.bytes0;
+            bytes1 = val.bytes1;
+            bytes2 = val.bytes2;
+            bytes3 = val.bytes3;
+            subtractBytes(tmp0, tmp1, tmp2, tmp3);
+        }
+        signum = signum == cmp ? -1 : 1;
+    }
+
+    /**
+     * Subtract the given bytes from our bytes.
+     * Our bytes must represent the larger number.
+     * Adapted from BigInteger
+     */
+    private void subtractBytes(final long bytes0, final long bytes1, final long bytes2, final long bytes3) {
+        final long big0 = this.bytes0;
+        final long big1 = this.bytes1;
+        final long big2 = this.bytes2;
+        final long big3 = this.bytes3;
+
+        long difference = 0;
+
+        // Subtract common parts of both numbers
+        for (int index = 7; index >= 0; index--) {
+            long big = get32BitWordFromLongsWithWordIndex(big0, big1, big2, big3, index);
+            long little = get32BitWordFromLongsWithWordIndex(bytes0, bytes1, bytes2, bytes3, index);
+            difference = big - little + (difference >> 32);
+            switch (index) {
+                case 0:
+                    this.bytes0 = (difference << 32) | getLowBits(this.bytes0);
+                    break;
+                case 1:
+                    this.bytes0 = (this.bytes0 & HIGH_MASK) | getLowBits(difference);
+                    break;
+                case 2:
+                    this.bytes1 = (difference << 32) | getLowBits(this.bytes1);
+                    break;
+                case 3:
+                    this.bytes1 = (this.bytes1 & HIGH_MASK) | getLowBits(difference);
+                    break;
+                case 4:
+                    this.bytes2 = (difference << 32) | getLowBits(this.bytes2);
+                    break;
+                case 5:
+                    this.bytes2 = (this.bytes2 & HIGH_MASK) | getLowBits(difference);
+                    break;
+                case 6:
+                    this.bytes3 = (difference << 32) | getLowBits(this.bytes3);
+                    break;
+                case 7:
+                    this.bytes3 = (this.bytes3 & HIGH_MASK) | getLowBits(difference);
+                    break;
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+    }
+
+    private long get32BitWordFromLongsWithWordIndex(
+            long bytes0,
+            long bytes1,
+            long bytes2,
+            long bytes3,
+            int index) {
+        return switch (index) {
+            case 0 -> getHighBits(bytes0);
+            case 1 -> getLowBits(bytes0);
+            case 2 -> getHighBits(bytes1);
+            case 3 -> getLowBits(bytes1);
+            case 4 -> getHighBits(bytes2);
+            case 5 -> getLowBits(bytes2);
+            case 6 -> getHighBits(bytes3);
+            case 7 -> getLowBits(bytes3);
+            default -> throw new IllegalStateException();
+        };
+    }
+
+    private int compareMagnitude(final LightDecimal val) {
+        if (bytes0 != val.bytes0) {
+            return Long.compareUnsigned(bytes0, val.bytes0);
+        }
+        if (bytes1 != val.bytes1) {
+            return Long.compareUnsigned(bytes1, val.bytes1);
+        }
+        if (bytes2 != val.bytes2) {
+            return Long.compareUnsigned(bytes2, val.bytes2);
+        }
+        if (bytes3 != val.bytes3) {
+            return Long.compareUnsigned(bytes3, val.bytes3);
+        }
+        return 0;
+    }
+
 
     /**
      * Returns a new LightDecimal whose value is the sum of the two
@@ -241,13 +390,13 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         long highBits;
         long lowBits;
         //byte 3
-        highBits = bytes3 >>> 32;
-        lowBits = bytes3 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes3);
+        lowBits = getLowBits(bytes3);
         lowBits = lowBits * 10 + carry;
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
-        bytes3 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes3 = (highBits << 32) | (lowBits & LOW_MASK);
 
         if ((bytes2 | bytes1 | bytes0 | carry) == 0)
         {
@@ -255,13 +404,13 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         }
 
         //byte 2
-        highBits = bytes2 >>> 32;
-        lowBits = bytes2 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes2);
+        lowBits = getLowBits(bytes2);
         lowBits = lowBits * 10 + carry;
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
-        bytes2 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes2 = (highBits << 32) | (lowBits & LOW_MASK);
 
         if ((bytes1 | bytes0 | carry) == 0)
         {
@@ -269,13 +418,13 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         }
 
         //byte 1
-        highBits = bytes1 >>> 32;
-        lowBits = bytes1 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes1);
+        lowBits = getLowBits(bytes1);
         lowBits = lowBits * 10 + carry;
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
-        bytes1 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes1 = (highBits << 32) | (lowBits & LOW_MASK);
 
         if ((bytes0 | carry) == 0)
         {
@@ -283,8 +432,8 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         }
 
         //byte 0
-        highBits = bytes0 >>> 32;
-        lowBits = bytes0 & 0xFFFFFFFFL;
+        highBits = getHighBits(bytes0);
+        lowBits = getLowBits(bytes0);
         lowBits = lowBits * 10 + carry;
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
@@ -292,7 +441,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         if (carry != 0) {
             throw new ArithmeticException("Overflow");
         }
-        bytes0 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        bytes0 = (highBits << 32) | (lowBits & LOW_MASK);
     }
 
     @Override
@@ -370,14 +519,14 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
 
     private static void toIntegerString(final StringBuilder sb, final long bytes0, final long bytes1, final long bytes2, final long bytes3) {
         // Long division on 32-bit words
-        long highBytes0 = bytes0 >>> 32;
-        long lowBytes0 = bytes0 & 0xFFFFFFFFL;
-        long highBytes1 = bytes1 >>> 32;
-        long lowBytes1 = bytes1 & 0xFFFFFFFFL;
-        long highBytes2 = bytes2 >>> 32;
-        long lowBytes2 = bytes2 & 0xFFFFFFFFL;
-        long highBytes3 = bytes3 >>> 32;
-        long lowBytes3 = bytes3 & 0xFFFFFFFFL;
+        long highBytes0 = getHighBits(bytes0);
+        long lowBytes0 = getLowBits(bytes0);
+        long highBytes1 = getHighBits(bytes1);
+        long lowBytes1 = getLowBits(bytes1);
+        long highBytes2 = getHighBits(bytes2);
+        long lowBytes2 = getLowBits(bytes2);
+        long highBytes3 = getHighBits(bytes3);
+        long lowBytes3 = getLowBits(bytes3);
 
         while ((highBytes0 | lowBytes0 | highBytes1 | lowBytes1 | highBytes2 | lowBytes2 | highBytes3 | lowBytes3) != 0) {
             long remainder;
