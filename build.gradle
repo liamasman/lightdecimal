@@ -1,17 +1,24 @@
 plugins {
-    id 'java'
+    id("java")
+    id("me.champeau.jmh") version "0.7.2"
 }
 
-group = 'com.liamasman'
-version = '1.0-SNAPSHOT'
+group = "com.liamasman"
+version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    jmhAnnotationProcessor(libs.javax.annotation.api)
+    jmhAnnotationProcessor(libs.jmh.generator.annprocess)
+
+    jmhImplementation(libs.bundles.jmh)
+
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+
 }
 
 test {
