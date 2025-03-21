@@ -245,6 +245,11 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = highBits >>> 32;
         bytes3 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
 
+        if ((bytes2 | bytes1 | bytes0 | carry) == 0)
+        {
+            return;
+        }
+
         //byte 2
         highBits = bytes2 >>> 32;
         lowBits = bytes2 & 0xFFFFFFFFL;
@@ -254,6 +259,11 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = highBits >>> 32;
         bytes2 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
 
+        if ((bytes1 | bytes0 | carry) == 0)
+        {
+            return;
+        }
+
         //byte 1
         highBits = bytes1 >>> 32;
         lowBits = bytes1 & 0xFFFFFFFFL;
@@ -262,6 +272,11 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
         bytes1 = (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+
+        if ((bytes0 | carry) == 0)
+        {
+            return;
+        }
 
         //byte 0
         highBits = bytes0 >>> 32;
