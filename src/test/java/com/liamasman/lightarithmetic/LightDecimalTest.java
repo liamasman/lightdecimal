@@ -185,17 +185,44 @@ class LightDecimalTest {
     class mutableAddTest {
         @Test
         void add_positive_values_of_same_scale() {
-            assertEquals(new LightDecimal("4"), new LightDecimal("2").add(new LightDecimal("2")));
-            assertEquals(new LightDecimal("4.0"), new LightDecimal("2.0").add(new LightDecimal("2.0")));
-            assertEquals(new LightDecimal("4.00"), new LightDecimal("2.00").add(new LightDecimal("2.00")));
-            assertEquals(new LightDecimal("137.314"), new LightDecimal("137.000").add(new LightDecimal("0.314")));
-            assertEquals(new LightDecimal(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 1, 1),
-                    new LightDecimal(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 1, 1).add(new LightDecimal(0L, 0L, 0L, 0L, 0, 1)));
-            assertEquals(new LightDecimal(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 1, 1),
-                    new LightDecimal(0xFFFFFFFFFFFFFFFFL, 0x0L, 0xFFFFFFFFFFFFFFFFL, 0x0L, 1, 1).add(new LightDecimal(0x0L, 0xFFFFFFFFFFFFFFFFL, 0, 0xFFFFFFFFFFFFFFFFL, 1, 1)));
-            assertEquals(new LightDecimal(0x8000000000000000L, 0x0L, 0x0L, 0x0L, 1, 20),
-                    new LightDecimal(0x7FFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 1, 20).add(new LightDecimal(0L, 0L, 0L, 1L, 1, 20)));
+            assertAdd("6", "4", "2");
+            assertAdd("6.0", "4.0", "2.0");
+            assertAdd("6.00", "4.00", "2.00");
+            assertAdd("6.84", "4.31", "2.53");
+            assertAdd("137.314", "137.000", "0.314");
+            assertAdd("38303510801479704771.99237713288569866258", "13244537261834214431.42366548277345533417", "25058973539645490340.56871165011224332841");
+            assertAdd(new LightDecimal(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 1, 1),
+                    new LightDecimal(0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 0xFFFFFFFFL, 1, 1),
+                    new LightDecimal(0L, 0L, 0L, 0L, 0, 1));
+            assertAdd(new LightDecimal(0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 1, 1),
+                    new LightDecimal(0xFFFFFFFFFFFFFFFFL, 0x0L, 0xFFFFFFFFFFFFFFFFL, 0x0L, 1, 1),
+                    new LightDecimal(0x0L, 0xFFFFFFFFFFFFFFFFL, 0, 0xFFFFFFFFFFFFFFFFL, 1, 1));
+            assertAdd(new LightDecimal(0x8000000000000000L, 0x0L, 0x0L, 0x0L, 1, 20),
+                    new LightDecimal(0x7FFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 0xFFFFFFFFFFFFFFFFL, 1, 20),
+                    new LightDecimal(0L, 0L, 0L, 1L, 1, 20));
 
+        }
+
+        @Test
+        void add_negative_values_of_same_scale()
+        {
+            assertAdd("-6", "-2", "-4");
+            assertAdd("-6.0", "-2.0", "-4.0");
+            assertAdd("-6.7", "-2.2", "-4.5");
+            assertAdd("-6.90", "-2.20", "-4.70");
+            assertAdd("-6.00", "-2.00", "-4.00");
+            assertAdd("-126.842344", "-126.000000", "-0.842344");
+        }
+
+        private static void assertAdd(final String expected, final String a, final String b)
+        {
+            assertEquals(new LightDecimal(expected), new LightDecimal(a).add(new LightDecimal(b)));
+        }
+
+        private static void assertAdd(final LightDecimal expected, final LightDecimal a, final LightDecimal b)
+        {
+            assertEquals(expected, new LightDecimal(a).add(b));
+            assertEquals(expected, new LightDecimal(b).add(a));
         }
     }
 }
