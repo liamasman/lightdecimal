@@ -1,18 +1,10 @@
 package com.liamasman.lightarithmetic;
 
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
-
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
@@ -21,51 +13,40 @@ public class BigDecimalBenchmark
 {
     private static final String[] STRINGS = {
             "47982487324874987234.89347834786487264723",
-            "12398479823589534850.00340342347835746324",
+            "-12398479823589534850.00340342347835746324",
             "38970156546516841842.45365273689791827324",
             "92948439493491283414.78641674612764786431",
             "90481098342385824534.89217473473289473289",
-            "34781909585923842343.38467816478365873426",
-            "39482398759348768911.88832838219439483984",
+            "-39482398759348768911.88832838219439483984",
+            "-34781909585923842343.38467816478365873426",
             "11123583925798247562.52837548735425765322",
+            "89234726347234782364.89543897765348967382",
             "19298498328523853858.38549283759832759221",
-            "19294959234502341410.29490032401491240148",
-            "99124831823743253726.82184783147723471674",
-            "46124514932588927582.98634876238563278283"
-    };
-    private static final BigDecimal[] BIG_DECIMALS = {
-            new BigDecimal("47982487324874987234.89347834786487264723"),
-            new BigDecimal("12398479823589534850.00340342347835746324"),
-            new BigDecimal("38970156546516841842.45365273689791827324"),
-            new BigDecimal("92948439493491283414.78641674612764786431"),
-            new BigDecimal("90481098342385824534.89217473473289473289"),
-            new BigDecimal("34781909585923842343.38467816478365873426"),
-            new BigDecimal("39482398759348768911.88832838219439483984"),
-            new BigDecimal("11123583925798247562.52837548735425765322"),
-            new BigDecimal("19298498328523853858.38549283759832759221"),
-            new BigDecimal("19294959234502341410.29490032401491240148"),
-            new BigDecimal("99124831823743253726.82184783147723471674"),
-            new BigDecimal("46124514932588927582.98634876238563278283")
+            "-19294959234502341410.29490032401491240148",
+            "-99124831823743253726.82184783147723471674",
+            "46124514932588927582.98634876238563278283",
+            "-58573846578346578345.34582375982748724623",
+            "45645873465786347520.00000357622100000124",
+            "99583487573747834783.34661000450345234000"
     };
 
     @State(Scope.Thread)
     public static class ThreadState
     {
+        private final BigDecimal[] decimals = Arrays.stream(STRINGS)
+                .map(BigDecimal::new)
+                .toArray(BigDecimal[]::new);
         private int index = 0;
 
         private int nextIndex()
         {
-            if (index >= BIG_DECIMALS.length)
-            {
-                index = 1;
-                return 0;
-            }
+            index = index & 0x0F;
             return index++;
         }
 
         public BigDecimal nextBigDecimal()
         {
-            return BIG_DECIMALS[nextIndex()];
+            return decimals[nextIndex()];
         }
 
         public BigDecimal constructNextBigDecimal()
