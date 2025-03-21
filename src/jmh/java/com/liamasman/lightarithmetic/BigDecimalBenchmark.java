@@ -33,55 +33,84 @@ public class BigDecimalBenchmark
             "99124831823743253726.82184783147723471674",
             "46124514932588927582.98634876238563278283"
     };
-    private static final LightDecimal[] BIG_DECIMALS = {
-            new LightDecimal("47982487324874987234.89347834786487264723"),
-            new LightDecimal("12398479823589534850.00340342347835746324"),
-            new LightDecimal("38970156546516841842.45365273689791827324"),
-            new LightDecimal("92948439493491283414.78641674612764786431"),
-            new LightDecimal("90481098342385824534.89217473473289473289"),
-            new LightDecimal("34781909585923842343.38467816478365873426"),
-            new LightDecimal("39482398759348768911.88832838219439483984"),
-            new LightDecimal("11123583925798247562.52837548735425765322"),
-            new LightDecimal("19298498328523853858.38549283759832759221"),
-            new LightDecimal("19294959234502341410.29490032401491240148"),
-            new LightDecimal("99124831823743253726.82184783147723471674"),
-            new LightDecimal("46124514932588927582.98634876238563278283")
+    private static final BigDecimal[] BIG_DECIMALS = {
+            new BigDecimal("47982487324874987234.89347834786487264723"),
+            new BigDecimal("12398479823589534850.00340342347835746324"),
+            new BigDecimal("38970156546516841842.45365273689791827324"),
+            new BigDecimal("92948439493491283414.78641674612764786431"),
+            new BigDecimal("90481098342385824534.89217473473289473289"),
+            new BigDecimal("34781909585923842343.38467816478365873426"),
+            new BigDecimal("39482398759348768911.88832838219439483984"),
+            new BigDecimal("11123583925798247562.52837548735425765322"),
+            new BigDecimal("19298498328523853858.38549283759832759221"),
+            new BigDecimal("19294959234502341410.29490032401491240148"),
+            new BigDecimal("99124831823743253726.82184783147723471674"),
+            new BigDecimal("46124514932588927582.98634876238563278283")
     };
 
     @State(Scope.Thread)
     public static class ThreadState
     {
-        public int index = 0;
+        private int index = 0;
+
+        private int nextIndex()
+        {
+            if (index >= BIG_DECIMALS.length)
+            {
+                index = 1;
+                return 0;
+            }
+            return index++;
+        }
+
+        public BigDecimal nextBigDecimal()
+        {
+            return BIG_DECIMALS[nextIndex()];
+        }
+
+        public BigDecimal constructNextBigDecimal()
+        {
+            final BigDecimal bigDecimal = nextBigDecimal();
+            return new BigDecimal(bigDecimal.unscaledValue(), bigDecimal.scale());
+        }
+
+        public String nextString()
+        {
+            return STRINGS[nextIndex()];
+        }
     }
 
     @Benchmark
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @BenchmarkMode(Mode.Throughput)
     @Warmup(iterations = 3, time = 3)
-    @Measurement(iterations = 5, time = 5)
+    @Measurement(iterations = 3, time = 5)
     public void fromString(final ThreadState state, final Blackhole bh)
     {
-        bh.consume(new BigDecimal(STRINGS[state.index++]));
-
-        if (state.index >= STRINGS.length)
-        {
-            state.index = 0;
-        }
+        bh.consume(new BigDecimal(state.nextString()));
     }
 
     @Benchmark
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @BenchmarkMode(Mode.Throughput)
     @Warmup(iterations = 3, time = 3)
-    @Measurement(iterations = 5, time = 5)
+    @Measurement(iterations = 3, time = 5)
     public void toString(final ThreadState state, final Blackhole bh)
     {
-        bh.consume(BIG_DECIMALS[state.index++].toString());
+        //BigDecimal caches the string value, so it'd lie about performance if we didn't construct it again
+        bh.consume(state.constructNextBigDecimal().toString());
+    }
 
-        if (state.index >= BIG_DECIMALS.length)
-        {
-            state.index = 0;
-        }
+    @Benchmark
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @BenchmarkMode(Mode.Throughput)
+    @Warmup(iterations = 3, time = 3)
+    @Measurement(iterations = 3, time = 5)
+    public void additionSameScale(final ThreadState state, final Blackhole bh)
+    {
+        final BigDecimal a = state.nextBigDecimal();
+        final BigDecimal b = state.nextBigDecimal();
+        bh.consume(a.add(b));
     }
 
     public static void main(String[] args) throws Exception

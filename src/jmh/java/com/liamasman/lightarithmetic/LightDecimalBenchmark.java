@@ -50,37 +50,59 @@ public class LightDecimalBenchmark
     @State(Scope.Thread)
     public static class ThreadState
     {
-        public int index = 0;
+        private int index = 0;
+
+        private int nextIndex()
+        {
+            if (index >= LIGHT_DECIMALS.length)
+            {
+                index = 1;
+                return 0;
+            }
+            return index++;
+        }
+
+        public LightDecimal nextLightDecimal()
+        {
+            return LIGHT_DECIMALS[nextIndex()];
+        }
+
+        public String nextString()
+        {
+            return STRINGS[nextIndex()];
+        }
     }
 
     @Benchmark
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @BenchmarkMode(Mode.Throughput)
     @Warmup(iterations = 3, time = 3)
-    @Measurement(iterations = 5, time = 5)
+    @Measurement(iterations = 3, time = 5)
     public void fromString(final ThreadState state, final Blackhole bh)
     {
-        bh.consume(new LightDecimal(STRINGS[state.index++]));
-
-        if (state.index >= STRINGS.length)
-        {
-            state.index = 0;
-        }
+        bh.consume(new LightDecimal(state.nextString()));
     }
 
     @Benchmark
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @BenchmarkMode(Mode.Throughput)
     @Warmup(iterations = 3, time = 3)
-    @Measurement(iterations = 5, time = 5)
+    @Measurement(iterations = 3, time = 5)
     public void toString(final ThreadState state, final Blackhole bh)
     {
-        bh.consume(LIGHT_DECIMALS[state.index++].toString());
+        bh.consume(state.nextLightDecimal().toString());
+    }
 
-        if (state.index >= LIGHT_DECIMALS.length)
-        {
-            state.index = 0;
-        }
+    @Benchmark
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @BenchmarkMode(Mode.Throughput)
+    @Warmup(iterations = 3, time = 3)
+    @Measurement(iterations = 3, time = 5)
+    public void additionSameScale(final ThreadState state, final Blackhole bh)
+    {
+        final LightDecimal a = state.nextLightDecimal();
+        final LightDecimal b = state.nextLightDecimal();
+        bh.consume(a.add(b));
     }
 
     public static void main(String[] args) throws Exception
