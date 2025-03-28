@@ -235,6 +235,35 @@ class LightDecimalTest {
                     "-13248893245982375827352395843.458972348798324573486582345723");
         }
 
+        @Test
+        void add_positive_values_of_different_scales() {
+            //Add 0
+            assertAdd("0.00000000000000000000", "0.00000000000000000000", "0.0000000000");
+            assertAdd("0.00000000000000000000", "0.00000000000000000000", "0.00");
+//            assertAdd("1.100000000000000001", "1.100000000000000001", "0.0"); // TODO - big scale differences
+            assertAdd("1.100001001", "1.100001001", "0.0");
+            assertAdd("1.1000010010000000", "1.100001001", "0.0000000000000000");
+            assertAdd("137.314", "137.314", "0");
+            assertAdd("137", "137", "0");
+            assertAdd("137.00", "137", "0.00");
+            assertAdd("137.00", "137.0", "0.00");
+            assertAdd("137.00", "137.00", "0.0");
+
+            //Add where 10^(scale diff) is < Long.MAX_VALUE
+            assertAdd("135.142354", "135", "0.142354");
+            assertAdd("135.1423540", "135", "0.1423540");
+            assertAdd("135.1423540", "135.0000000", "0.142354");
+            assertAdd("1350.142354", "1350", "0.142354");
+            assertAdd("1350.1423540", "1350", "0.1423540");
+            assertAdd("1350.1423540", "1350.0000000", "0.142354");
+            assertAdd("760.087784", "435.544", "324.543784");
+            assertAdd("760.0997860", "435.544", "324.5557860");
+            //TODO large significands
+
+            //Add where 10^(scale diff) is > Long.MAX_VALUE
+            //TODO
+        }
+
         private static void assertAdd(final String expected, final String a, final String b)
         {
             assertEquals(new LightDecimal(expected), new LightDecimal(a).add(new LightDecimal(b)), () -> a + " + " + b);

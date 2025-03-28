@@ -9,6 +9,8 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private static final long ALL_BUT_SIGN_BIT_MAX = Long.MAX_VALUE;
     private static final long HIGH_MASK = 0xFFFFFFFFL << 32;
     private static final long LOW_MASK = 0xFFFFFFFFL;
+    private static final int[] POWERS_OF_TEN = {1, 10, 100, 1000, 10000, 100000,
+            1000000, 10000000, 100000000, 1000000000};
 
     // private so no one else mutates it. ** NEVER RETURN THIS OBJECT **
     private static final LightDecimal ZERO = new LightDecimal(0, 0, 0, 0, 0, 0);
@@ -138,78 +140,32 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return this;
     }
 
-    public LightDecimal add(LightDecimal val) {
-        if (val.signum == 0) {
-            return this;
-        }
-        if (signum == 0) {
-            copyFrom(val);
-            return this;
-        }
-        if (val.signum == signum) {
-            addSameScaleSameSignum(val);
-            return this;
+    public LightDecimal add(final LightDecimal val) {
+        if (this.scale == val.scale) {
+            if (val.isZero()) {
+                this.scale = Math.max(this.scale, val.scale);
+            } else if (this.isZero()) {
+                copyFrom(val);
+                return this;
+            } else if (val.signum == signum) {
+                addSameScaleSameSignum(val);
+            } else {
+                addSameScaleDifferentSignum(val);
+            }
         } else {
-            addSameScaleDifferentSignum(val);
+            if (this.isZero() && val.isZero()) {
+                this.scale = Math.max(this.scale, val.scale);
+            } else {
+                addDifferentScale(val);
+            }
         }
 
         return this;
     }
 
     private void addSameScaleSameSignum(final LightDecimal val) {
-        // Long addition using 32-bit words
-        long carry = 0;
-        long highBits;
-        long highBitsVal;
-        long lowBits;
-        long lowBitsVal;
-
-        //byte 3
-        highBits = getHighBits(bytes3);
-        lowBits = getLowBits(bytes3);
-        highBitsVal = getHighBits(val.bytes3);
-        lowBitsVal = getLowBits(val.bytes3);
-        lowBits = lowBits + lowBitsVal + carry;
-        carry = lowBits >>> 32;
-        highBits = highBits + highBitsVal + carry;
-        carry = highBits >>> 32;
-        bytes3 = (highBits << 32) | (lowBits & LOW_MASK);
-
-        //byte 2
-        highBits = getHighBits(bytes2);
-        lowBits = getLowBits(bytes2);
-        highBitsVal = getHighBits(val.bytes2);
-        lowBitsVal = getLowBits(val.bytes2);
-        lowBits = lowBits + lowBitsVal + carry;
-        carry = lowBits >>> 32;
-        highBits = highBits + highBitsVal + carry;
-        carry = highBits >>> 32;
-        bytes2 = (highBits << 32) | (lowBits & LOW_MASK);
-
-        //byte 1
-        highBits = getHighBits(bytes1);
-        lowBits = getLowBits(bytes1);
-        highBitsVal = getHighBits(val.bytes1);
-        lowBitsVal = getLowBits(val.bytes1);
-        lowBits = lowBits + lowBitsVal + carry;
-        carry = lowBits >>> 32;
-        highBits = highBits + highBitsVal + carry;
-        carry = highBits >>> 32;
-        bytes1 = (highBits << 32) | (lowBits & LOW_MASK);
-
-        //byte 0
-        highBits = getHighBits(bytes0);
-        lowBits = getLowBits(bytes0);
-        highBitsVal = getHighBits(val.bytes0);
-        lowBitsVal = getLowBits(val.bytes0);
-        lowBits = lowBits + lowBitsVal + carry;
-        carry = lowBits >>> 32;
-        highBits = highBits + highBitsVal + carry;
-        carry = highBits >>> 32;
-        if (carry != 0) {
-            throw new ArithmeticException("Overflow");
-        }
-        bytes0 = (highBits << 32) | (lowBits & LOW_MASK);
+        addSameScaleSameSignum(this.bytes0, this.bytes1, this.bytes2, this.bytes3,
+                val.bytes0, val.bytes1, val.bytes2, val.bytes3);
     }
 
     private static long getHighBits(long bytes) {
@@ -220,7 +176,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return bytes & LOW_MASK;
     }
 
-    private void addSameScaleDifferentSignum(LightDecimal val) {
+    private void addSameScaleDifferentSignum(final LightDecimal val) {
         int cmp = compareMagnitude(val);
         if (cmp == 0) {
             int scale = this.scale;
@@ -244,6 +200,161 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
             subtractBytes(tmp0, tmp1, tmp2, tmp3);
         }
         signum = signum == cmp ? -1 : 1;
+    }
+
+    private void addSameScaleDifferentSignum(int aSignum, long aBytes0, long aBytes1, long aBytes2, long aBytes3,
+                                             int bSignum, long bBytes0, long bBytes1, long bBytes2, long bBytes3) {
+        //TODO
+        throw new ArithmeticException("Not implemented");
+    }
+
+    private void addDifferentScale(final LightDecimal val) {
+        int scaleDiff = Math.abs(this.scale - val.scale); // Anti-branching candidate
+
+        if (scaleDiff < POWERS_OF_TEN.length) {
+            addDifferentScaleSmallScaleDiff(val, scaleDiff);
+        } else {
+            //TODO
+            throw new ArithmeticException("Scale difference too large");
+        }
+    }
+
+    private void addDifferentScaleSmallScaleDiff(final LightDecimal val, final int scaleDiff) {
+        final LightDecimal bigScale;
+        final LightDecimal smallScale;
+        if (this.scale < val.scale) {
+            bigScale = val;
+            smallScale = this;
+        } else {
+            bigScale = this;
+            smallScale = val;
+        }
+
+        if (smallScale.isZero()) {
+            copyFrom(bigScale);
+            return;
+        }
+
+        this.scale = bigScale.scale;
+
+        //multiply lower scale number by 10^scaleDiff
+        long bytes0high = getHighBits(smallScale.bytes0);
+        long bytes0low = getLowBits(smallScale.bytes0);
+        long bytes1high = getHighBits(smallScale.bytes1);
+        long bytes1low = getLowBits(smallScale.bytes1);
+        long bytes2high = getHighBits(smallScale.bytes2);
+        long bytes2low = getLowBits(smallScale.bytes2);
+        long bytes3high = getHighBits(smallScale.bytes3);
+        long bytes3low = getLowBits(smallScale.bytes3);
+
+        final int multiplier = POWERS_OF_TEN[scaleDiff];
+
+        long carry = 0;
+        bytes3low = bytes3low * multiplier + carry;
+        carry = getHighBits(bytes3low);
+
+        bytes3high = bytes3high * multiplier + carry;
+        carry = getHighBits(bytes3high);
+
+        bytes2low = bytes2low * multiplier + carry;
+        carry = getHighBits(bytes2low);
+
+        bytes2high = bytes2high * multiplier + carry;
+        carry = getHighBits(bytes2high);
+
+        bytes1low = bytes1low * multiplier + carry;
+        carry = getHighBits(bytes1low);
+
+        bytes1high = bytes1high * multiplier + carry;
+        carry = getHighBits(bytes1high);
+
+        bytes0low = bytes0low * multiplier + carry;
+        carry = getHighBits(bytes0low);
+
+        bytes0high = bytes0high * multiplier + carry;
+        carry = getHighBits(bytes0high);
+        if (carry != 0) {
+            throw new ArithmeticException("Overflow");
+        }
+
+        // Now we have the smallScale number in the same scale as bigScale
+        if (bigScale.isZero()) {
+            // Nothing to add
+            this.bytes0 = combineLongHalves(bytes0high, bytes0low);
+            this.bytes1 = combineLongHalves(bytes1high, bytes1low);
+            this.bytes2 = combineLongHalves(bytes2high, bytes2low);
+            this.bytes3 = combineLongHalves(bytes3high, bytes3low);
+            this.signum = smallScale.signum;
+            return;
+        }
+
+        // Add the two numbers together
+        add(smallScale.signum, combineLongHalves(bytes0high, bytes0low), combineLongHalves(bytes1high, bytes1low), combineLongHalves(bytes2high, bytes2low), combineLongHalves(bytes3high, bytes3low),
+                bigScale.signum, bigScale.bytes0, bigScale.bytes1, bigScale.bytes2, bigScale.bytes3);
+    }
+
+    private void add(int aSignum, long aBytes0, long aBytes1, long aBytes2, long aBytes3, int bSignum, long bBytes0, long bBytes1, long bBytes2, long bBytes3) {
+        if (aSignum == bSignum) {
+            addSameScaleSameSignum(aBytes0, aBytes1, aBytes2, aBytes3, bBytes0, bBytes1, bBytes2, bBytes3);
+        } else {
+            addSameScaleDifferentSignum(aSignum, aBytes0, aBytes1, aBytes2, aBytes3, bSignum, bBytes0, bBytes1, bBytes2, bBytes3);
+        }
+    }
+
+    private void addSameScaleSameSignum(long aBytes0, long aBytes1, long aBytes2, long aBytes3, long bBytes0, long bBytes1, long bBytes2, long bBytes3) {
+        // Long addition using 32-bit words
+        long carry = 0;
+        long highBits;
+        long highBitsVal;
+        long lowBits;
+        long lowBitsVal;
+
+        //byte 3
+        highBits = getHighBits(aBytes3);
+        lowBits = getLowBits(aBytes3);
+        highBitsVal = getHighBits(bBytes3);
+        lowBitsVal = getLowBits(bBytes3);
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        bytes3 = combineLongHalves(highBits, lowBits);
+
+        //byte 2
+        highBits = getHighBits(aBytes2);
+        lowBits = getLowBits(aBytes2);
+        highBitsVal = getHighBits(bBytes2);
+        lowBitsVal = getLowBits(bBytes2);
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        bytes2 = combineLongHalves(highBits, lowBits);
+
+        //byte 1
+        highBits = getHighBits(aBytes1);
+        lowBits = getLowBits(aBytes1);
+        highBitsVal = getHighBits(bBytes1);
+        lowBitsVal = getLowBits(bBytes1);
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        bytes1 = combineLongHalves(highBits, lowBits);
+
+        //byte 0
+        highBits = getHighBits(aBytes0);
+        lowBits = getLowBits(aBytes0);
+        highBitsVal = getHighBits(bBytes0);
+        lowBitsVal = getLowBits(bBytes0);
+        lowBits = lowBits + lowBitsVal + carry;
+        carry = lowBits >>> 32;
+        highBits = highBits + highBitsVal + carry;
+        carry = highBits >>> 32;
+        if (carry != 0) {
+            throw new ArithmeticException("Overflow");
+        }
+        bytes0 = combineLongHalves(highBits, lowBits);
     }
 
     /**
@@ -398,8 +509,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = highBits >>> 32;
         bytes3 = (highBits << 32) | (lowBits & LOW_MASK);
 
-        if ((bytes2 | bytes1 | bytes0 | carry) == 0)
-        {
+        if ((bytes2 | bytes1 | bytes0 | carry) == 0) {
             return;
         }
 
@@ -412,8 +522,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = highBits >>> 32;
         bytes2 = (highBits << 32) | (lowBits & LOW_MASK);
 
-        if ((bytes1 | bytes0 | carry) == 0)
-        {
+        if ((bytes1 | bytes0 | carry) == 0) {
             return;
         }
 
@@ -426,8 +535,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = highBits >>> 32;
         bytes1 = (highBits << 32) | (lowBits & LOW_MASK);
 
-        if ((bytes0 | carry) == 0)
-        {
+        if ((bytes0 | carry) == 0) {
             return;
         }
 
@@ -633,6 +741,10 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return 0;
     }
 
+    private boolean isZero() {
+        return signum() == 0;
+    }
+
     @Override
     public LightDecimal clone() {
         try {
@@ -640,5 +752,9 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private long combineLongHalves(long high, long low) {
+        return (high << 32) | (low & LOW_MASK);
     }
 }
