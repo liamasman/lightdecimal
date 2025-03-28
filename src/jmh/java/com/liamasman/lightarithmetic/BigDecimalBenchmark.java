@@ -2,6 +2,9 @@ package com.liamasman.lightarithmetic;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -11,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class BigDecimalBenchmark
 {
-    private static final String[] STRINGS = {
+    private static final String[] STRINGS_SCALE_20 = {
             "47982487324874987234.89347834786487264723",
             "-12398479823589534850.00340342347835746324",
             "38970156546516841842.45365273689791827324",
@@ -30,10 +33,32 @@ public class BigDecimalBenchmark
             "99583487573747834783.34661000450345234000"
     };
 
+    private static final String[] STRINGS_VARIOUS_SCALE = {
+            "384843285552.4897232384723848572",
+            "347232957342.52455783257894357",
+            "443825439867.72482853582557",
+            "892390459849.8357485739845792",
+            "-34724756834.7248672935235",
+            "-43825439867.3852745894736876589",
+            "443825439867.54228375829759246346523",
+            "993125398345.8347598237648769835769842745",
+            "059459230100.358927589274687438768437687",
+            "935774620104.59823758924767483768274",
+            "986341194943.23543698952001010439513523",
+            "432421334841.0009304810401348023523014302",
+            "059823410102.357293756047023570237502",
+            "947568910010.5842752387532857385",
+            "-34235235246.235246355235",
+            "443825439867.58427523832857385"
+    };
+
     @State(Scope.Thread)
     public static class ThreadState
     {
-        private final BigDecimal[] decimals = Arrays.stream(STRINGS)
+        private final BigDecimal[] decimals20 = Arrays.stream(STRINGS_SCALE_20)
+                .map(BigDecimal::new)
+                .toArray(BigDecimal[]::new);
+        private final BigDecimal[] decimals = Arrays.stream(STRINGS_VARIOUS_SCALE)
                 .map(BigDecimal::new)
                 .toArray(BigDecimal[]::new);
         private int index = 0;
@@ -44,20 +69,28 @@ public class BigDecimalBenchmark
             return index++;
         }
 
-        public BigDecimal nextBigDecimal()
+        public BigDecimal nextBigDecimal20()
         {
+            return decimals20[nextIndex()];
+        }
+
+        public BigDecimal nextBigDecimal() {
             return decimals[nextIndex()];
         }
 
         public BigDecimal constructNextBigDecimal()
         {
-            final BigDecimal bigDecimal = nextBigDecimal();
+            final BigDecimal bigDecimal = nextBigDecimal20();
             return new BigDecimal(bigDecimal.unscaledValue(), bigDecimal.scale());
         }
 
-        public String nextString()
+        public String nextString20()
         {
-            return STRINGS[nextIndex()];
+            return STRINGS_SCALE_20[nextIndex()];
+        }
+
+        public String nextString() {
+            return STRINGS_VARIOUS_SCALE[nextIndex()];
         }
     }
 
@@ -89,6 +122,17 @@ public class BigDecimalBenchmark
     @Measurement(iterations = 3, time = 5)
     public void additionSameScale(final ThreadState state, final Blackhole bh)
     {
+        final BigDecimal a = state.nextBigDecimal20();
+        final BigDecimal b = state.nextBigDecimal20();
+        bh.consume(a.add(b));
+    }
+
+    @Benchmark
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @BenchmarkMode(Mode.Throughput)
+    @Warmup(iterations = 3, time = 3)
+    @Measurement(iterations = 3, time = 5)
+    public void additionDifferentScale(final ThreadState state, final Blackhole bh) {
         final BigDecimal a = state.nextBigDecimal();
         final BigDecimal b = state.nextBigDecimal();
         bh.consume(a.add(b));
@@ -96,6 +140,11 @@ public class BigDecimalBenchmark
 
     public static void main(String[] args) throws Exception
     {
-        org.openjdk.jmh.Main.main(args);
+        final Options opt = new OptionsBuilder()
+                .include(BigDecimalBenchmark.class.getSimpleName())
+                .forks(1)
+                .build();
+
+        new Runner(opt).run();
     }
 }

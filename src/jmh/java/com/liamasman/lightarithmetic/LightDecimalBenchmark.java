@@ -2,6 +2,9 @@ package com.liamasman.lightarithmetic;
 
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -10,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class LightDecimalBenchmark
 {
-    private static final String[] STRINGS = {
+    private static final String[] STRINGS_SCALE_20 = {
             "47982487324874987234.89347834786487264723",
             "-12398479823589534850.00340342347835746324",
             "38970156546516841842.45365273689791827324",
@@ -19,7 +22,7 @@ public class LightDecimalBenchmark
             "-39482398759348768911.88832838219439483984",
             "-34781909585923842343.38467816478365873426",
             "11123583925798247562.52837548735425765322",
-            "89234726347234782364.89543897765348967382",
+            "0.089543897765348967382",
             "19298498328523853858.38549283759832759221",
             "-19294959234502341410.29490032401491240148",
             "-99124831823743253726.82184783147723471674",
@@ -29,10 +32,32 @@ public class LightDecimalBenchmark
             "99583487573747834783.34661000450345234000"
     };
 
+    private static final String[] STRINGS_VARIOUS_SCALE = { //TODO add negatives
+            "384843285552.4897232384723848572",
+            "347232957342.52455783257894357",
+            "443825439867.72482853582557",
+            "892390459849.8357485739845792",
+            "534724756834.7248672935235",
+            "543825439867.3852745894736876589",
+            "443825439867.54228375829759246346523",
+            "993125398345.8347598237648769835769842745",
+            "059459230100.358927589274687438768437687",
+            "935774620104.59823758924767483768274",
+            "986341194943.23543698952001010439513523",
+            "432421334841.0009304810401348023523014302",
+            "059823410102.357293756047023570237502",
+            "947568910010.5842752387532857385",
+            "534235235246.235246355235",
+            "443825439867.58427523832857385"
+    };
+
     @State(Scope.Thread)
     public static class ThreadState
     {
-        private final LightDecimal[] decimals = Arrays.stream(STRINGS)
+        private final LightDecimal[] decimals20 = Arrays.stream(STRINGS_SCALE_20)
+                .map(LightDecimal::new)
+                .toArray(LightDecimal[]::new);
+        private final LightDecimal[] decimals = Arrays.stream(STRINGS_VARIOUS_SCALE)
                 .map(LightDecimal::new)
                 .toArray(LightDecimal[]::new);
         private int index = 0;
@@ -43,14 +68,22 @@ public class LightDecimalBenchmark
             return index++;
         }
 
-        public LightDecimal nextLightDecimal()
+        public LightDecimal nextLightDecimal20()
         {
+            return decimals20[nextIndex()];
+        }
+
+        public String nextString20()
+        {
+            return STRINGS_SCALE_20[nextIndex()];
+        }
+
+        public LightDecimal nextLightDecimal() {
             return decimals[nextIndex()];
         }
 
-        public String nextString()
-        {
-            return STRINGS[nextIndex()];
+        public String nextString() {
+            return STRINGS_VARIOUS_SCALE[nextIndex()];
         }
     }
 
@@ -81,6 +114,17 @@ public class LightDecimalBenchmark
     @Measurement(iterations = 3, time = 5)
     public void additionSameScale(final ThreadState state, final Blackhole bh)
     {
+        final LightDecimal a = state.nextLightDecimal20();
+        final LightDecimal b = state.nextLightDecimal20();
+        bh.consume(a.add(b));
+    }
+
+    @Benchmark
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @BenchmarkMode(Mode.Throughput)
+    @Warmup(iterations = 3, time = 3)
+    @Measurement(iterations = 3, time = 5)
+    public void additionDifferentScale(final ThreadState state, final Blackhole bh) {
         final LightDecimal a = state.nextLightDecimal();
         final LightDecimal b = state.nextLightDecimal();
         bh.consume(a.add(b));
@@ -88,6 +132,11 @@ public class LightDecimalBenchmark
 
     public static void main(String[] args) throws Exception
     {
-        org.openjdk.jmh.Main.main(args);
+        final Options opt = new OptionsBuilder()
+                .include(LightDecimalBenchmark.class.getSimpleName())
+                .forks(1)
+                .build();
+
+        new Runner(opt).run();
     }
 }
