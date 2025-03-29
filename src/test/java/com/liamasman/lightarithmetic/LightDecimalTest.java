@@ -5,8 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class LightDecimalTest {
 
@@ -183,6 +182,21 @@ class LightDecimalTest {
         assertThrows(NumberFormatException.class, () -> new LightDecimal(" 1 "), "Should not allow whitespace around number");
     }
 
+    @Test
+    void equalsTest() {
+        assertEquals(new LightDecimal("0"), new LightDecimal("0"));
+        assertEquals(new LightDecimal("-5"), new LightDecimal("-5"));
+        assertEquals(new LightDecimal("-10"), new LightDecimal("-10"));
+        assertEquals(new LightDecimal("-1.354235"), new LightDecimal("-1.354235"));
+
+        assertNotEquals(new LightDecimal("0"), new LightDecimal("0.0"));
+        assertNotEquals(new LightDecimal("-5"), new LightDecimal("-5.0"));
+        assertNotEquals(new LightDecimal("-10"), new LightDecimal("-10.0"));
+        assertNotEquals(new LightDecimal("-1.354235"), new LightDecimal("-1.3542350"));
+
+        assertNotEquals(new LightDecimal("1"), new LightDecimal("-1"));
+    }
+
     @Nested
     class mutableAddTest {
         @Test
@@ -232,9 +246,15 @@ class LightDecimalTest {
             assertAdd("-15495694344618058519.50025048496593210042",
                     "-49783459797852745754.23872346872436782367",
                     "34287765453234687234.73847298375843572325");
-            assertAdd("-25298359503841384045043476902.017610388074041301171654248122",
+            assertAdd("15495694344618058519.50025048496593210042",
+                    "49783459797852745754.23872346872436782367",
+                    "-34287765453234687234.73847298375843572325");
+            assertAdd("25298359503841384045043476902.017610388074041301171654248122",
                     "38547252749823759872395872745.476582736872365874658236593845",
                     "-13248893245982375827352395843.458972348798324573486582345723");
+            assertAdd("-25298359503841384045043476902.017610388074041301171654248122",
+                    "-38547252749823759872395872745.476582736872365874658236593845",
+                    "13248893245982375827352395843.458972348798324573486582345723");
         }
 
         @Test
@@ -290,6 +310,19 @@ class LightDecimalTest {
 
             //Add where 10^(scale diff) is > Long.MAX_VALUE
             //TODO
+        }
+
+        @Test
+        void add_values_of_different_signs_with_different_scales() {
+            assertAdd("0.0000000", "1.2325", "-1.2325000");
+            assertAdd("0.0000000", "-1.2325", "1.2325000");
+            assertAdd("-431.20076", "1.23124", "-432.432");
+            assertAdd("431.20076", "-1.23124", "432.432");
+            assertAdd("145359131.6655", "145362456.12", "-3324.4545");
+            assertAdd("-145359131.6655", "-145362456.12", "3324.4545");
+            assertAdd("1.00000", "1.32000", "-0.32");
+            assertAdd("-1.00000", "-1.32000", "0.32");
+            assertAdd("-4520.861664206515", "14.458345793485", "-4535.32001");
         }
 
         private static void assertAdd(final String expected, final String a, final String b)

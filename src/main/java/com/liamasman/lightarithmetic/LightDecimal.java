@@ -177,7 +177,13 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     }
 
     private void addSameScaleDifferentSignum(final LightDecimal val) {
-        int cmp = compareMagnitude(val);
+        addSameScaleDifferentSignum(signum, bytes0, bytes1, bytes2, bytes3, val.bytes0, val.bytes1, val.bytes2, val.bytes3);
+    }
+
+    private void addSameScaleDifferentSignum(int aSignum, long aBytes0, long aBytes1, long aBytes2, long aBytes3,
+                                             long bBytes0, long bBytes1, long bBytes2, long bBytes3) {
+        int cmp = compareMagnitude(aBytes0, aBytes1, aBytes2, aBytes3,
+                bBytes0, bBytes1, bBytes2, bBytes3);
         if (cmp == 0) {
             int scale = this.scale;
             copyFrom(ZERO);
@@ -187,25 +193,11 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
 
         if (cmp > 0) //This is the bigger number
         {
-            subtractBytes(val.bytes0, val.bytes1, val.bytes2, val.bytes3);
+            subtractBytes(aBytes0, aBytes1, aBytes2, aBytes3, bBytes0, bBytes1, bBytes2, bBytes3);
         } else {
-            long tmp0 = bytes0;
-            long tmp1 = bytes1;
-            long tmp2 = bytes2;
-            long tmp3 = bytes3;
-            bytes0 = val.bytes0;
-            bytes1 = val.bytes1;
-            bytes2 = val.bytes2;
-            bytes3 = val.bytes3;
-            subtractBytes(tmp0, tmp1, tmp2, tmp3);
+            subtractBytes(bBytes0, bBytes1, bBytes2, bBytes3, aBytes0, aBytes1, aBytes2, aBytes3);
         }
-        signum = signum == cmp ? -1 : 1;
-    }
-
-    private void addSameScaleDifferentSignum(int aSignum, long aBytes0, long aBytes1, long aBytes2, long aBytes3,
-                                             int bSignum, long bBytes0, long bBytes1, long bBytes2, long bBytes3) {
-        //TODO
-        throw new ArithmeticException("Not implemented");
+        signum = aSignum == cmp ? 1 : -1;
     }
 
     private void addDifferentScale(final LightDecimal val) {
@@ -297,7 +289,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         if (aSignum == bSignum) {
             addSameScaleSameSignum(aBytes0, aBytes1, aBytes2, aBytes3, bBytes0, bBytes1, bBytes2, bBytes3);
         } else {
-            addSameScaleDifferentSignum(aSignum, aBytes0, aBytes1, aBytes2, aBytes3, bSignum, bBytes0, bBytes1, bBytes2, bBytes3);
+            addSameScaleDifferentSignum(aSignum, aBytes0, aBytes1, aBytes2, aBytes3, bBytes0, bBytes1, bBytes2, bBytes3);
         }
     }
 
@@ -362,18 +354,16 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
      * Our bytes must represent the larger number.
      * Adapted from BigInteger
      */
-    private void subtractBytes(final long bytes0, final long bytes1, final long bytes2, final long bytes3) {
-        final long big0 = this.bytes0;
-        final long big1 = this.bytes1;
-        final long big2 = this.bytes2;
-        final long big3 = this.bytes3;
+    private void subtractBytes(
+            final long bigBytes0, final long bigBytes1, final long bigBytes2, final long bigBytes3,
+            final long littleBytes0, final long littleBytes1, final long littleBytes2, final long littleBytes3) {
 
         long difference = 0;
 
         // Subtract common parts of both numbers
         for (int index = 7; index >= 0; index--) {
-            long big = get32BitWordFromLongsWithWordIndex(big0, big1, big2, big3, index);
-            long little = get32BitWordFromLongsWithWordIndex(bytes0, bytes1, bytes2, bytes3, index);
+            long big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, index);
+            long little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, index);
             difference = big - little + (difference >> 32);
             switch (index) {
                 case 0:
@@ -425,18 +415,18 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         };
     }
 
-    private int compareMagnitude(final LightDecimal val) {
-        if (bytes0 != val.bytes0) {
-            return Long.compareUnsigned(bytes0, val.bytes0);
+    private int compareMagnitude(long aBytes0, long aBytes1, long aBytes2, long aBytes3, long bBytes0, long bBytes1, long bBytes2, long bBytes3) {
+        if (aBytes0 != bBytes0) {
+            return Long.compareUnsigned(aBytes0, bBytes0);
         }
-        if (bytes1 != val.bytes1) {
-            return Long.compareUnsigned(bytes1, val.bytes1);
+        if (aBytes1 != bBytes1) {
+            return Long.compareUnsigned(aBytes1, bBytes1);
         }
-        if (bytes2 != val.bytes2) {
-            return Long.compareUnsigned(bytes2, val.bytes2);
+        if (aBytes2 != bBytes2) {
+            return Long.compareUnsigned(aBytes2, bBytes2);
         }
-        if (bytes3 != val.bytes3) {
-            return Long.compareUnsigned(bytes3, val.bytes3);
+        if (aBytes3 != bBytes3) {
+            return Long.compareUnsigned(aBytes3, bBytes3);
         }
         return 0;
     }
@@ -567,7 +557,8 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
                 bytes2 == other.bytes2 &&
                 bytes1 == other.bytes1 &&
                 bytes0 == other.bytes0 &&
-                scale == other.scale;
+                scale == other.scale &&
+                signum == other.signum;
     }
 
     @Override
