@@ -12,9 +12,6 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private static final int[] POWERS_OF_TEN = {1, 10, 100, 1000, 10000, 100000,
             1000000, 10000000, 100000000, 1000000000};
 
-    // private so no one else mutates it. ** NEVER RETURN THIS OBJECT **
-    private static final LightDecimal ZERO = new LightDecimal(0, 0, 0, 0, 0, 0);
-
     /*
      * Stores the significand as an integer in big-endian format, where bytes3
      * contains the least significant byte and bytes0 contains the most
@@ -185,9 +182,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         int cmp = compareMagnitude(aBytes0, aBytes1, aBytes2, aBytes3,
                 bBytes0, bBytes1, bBytes2, bBytes3);
         if (cmp == 0) {
-            int scale = this.scale;
-            copyFrom(ZERO);
-            this.scale = scale;
+            setToZeroPreserveScale();
             return;
         }
 
@@ -540,6 +535,14 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
             throw new ArithmeticException("Overflow");
         }
         bytes0 = (highBits << 32) | (lowBits & LOW_MASK);
+    }
+
+    private void setToZeroPreserveScale() {
+        bytes0 = 0;
+        bytes1 = 0;
+        bytes2 = 0;
+        bytes3 = 0;
+        signum = 0;
     }
 
     @Override
