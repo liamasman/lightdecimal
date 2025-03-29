@@ -7,7 +7,7 @@ public class Util {
     private static final long LOW_MASK = 0xFFFFFFFFL;
 
     public static long combineLongHalves(long high, long low) {
-        return (high << 32) | (low & LightDecimal.LOW_MASK);
+        return (high << 32) | (low & LOW_MASK);
     }
 
     public static long getHighBits(long bytes) {
@@ -15,7 +15,7 @@ public class Util {
     }
 
     public static long getLowBits(long bytes) {
-        return bytes & LightDecimal.LOW_MASK;
+        return bytes & LOW_MASK;
     }
 
     public static long remainderUnsignedDividedBy10(long dividend, long quotient) {

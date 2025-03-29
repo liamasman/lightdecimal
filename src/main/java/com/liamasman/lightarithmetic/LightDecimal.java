@@ -8,7 +8,6 @@ import static com.liamasman.lightarithmetic.Util.*;
 
 public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private static final double LOG_TWO_BASE_TEN = Math.log(2.0) / Math.log(10.0);
-    private static final long LOW_MASK = 0xFFFFFFFFL;
     private static final int[] POWERS_OF_TEN = {1, 10, 100, 1000, 10000, 100000,
             1000000, 10000000, 100000000, 1000000000};
 
@@ -487,7 +486,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
-        bytes3 = (highBits << 32) | (lowBits & LOW_MASK);
+        bytes3 = combineLongHalves(highBits, lowBits);
 
         if ((bytes2 | bytes1 | bytes0 | carry) == 0) {
             return;
@@ -500,7 +499,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
-        bytes2 = (highBits << 32) | (lowBits & LOW_MASK);
+        bytes2 = combineLongHalves(highBits, lowBits);
 
         if ((bytes1 | bytes0 | carry) == 0) {
             return;
@@ -513,7 +512,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         carry = lowBits >>> 32;
         highBits = highBits * 10 + carry;
         carry = highBits >>> 32;
-        bytes1 = (highBits << 32) | (lowBits & LOW_MASK);
+        bytes1 = combineLongHalves(highBits, lowBits);
 
         if ((bytes0 | carry) == 0) {
             return;
@@ -529,7 +528,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         if (carry != 0) {
             throw new ArithmeticException("Overflow");
         }
-        bytes0 = (highBits << 32) | (lowBits & LOW_MASK);
+        bytes0 = combineLongHalves(highBits, lowBits);
     }
 
     private void setToZeroPreserveScale() {
