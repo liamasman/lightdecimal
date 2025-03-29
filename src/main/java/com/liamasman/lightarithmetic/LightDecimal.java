@@ -6,7 +6,6 @@ import java.util.Objects;
 
 public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private static final double LOG_TWO_BASE_TEN = Math.log(2.0) / Math.log(10.0);
-    private static final long HIGH_MASK = 0xFFFFFFFFL << 32;
     private static final long LOW_MASK = 0xFFFFFFFFL;
     private static final int[] POWERS_OF_TEN = {1, 10, 100, 1000, 10000, 100000,
             1000000, 10000000, 100000000, 1000000000};
