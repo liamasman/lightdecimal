@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 
+import static com.liamasman.lightarithmetic.Util.*;
+
 public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private static final double LOG_TWO_BASE_TEN = Math.log(2.0) / Math.log(10.0);
     private static final long LOW_MASK = 0xFFFFFFFFL;
@@ -161,14 +163,6 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     private void addSameScaleSameSignum(final LightDecimal val) {
         addSameScaleSameSignum(this.bytes0, this.bytes1, this.bytes2, this.bytes3,
                 val.bytes0, val.bytes1, val.bytes2, val.bytes3);
-    }
-
-    private static long getHighBits(long bytes) {
-        return bytes >>> 32;
-    }
-
-    private static long getLowBits(long bytes) {
-        return bytes & LOW_MASK;
     }
 
     private void addSameScaleDifferentSignum(final LightDecimal val) {
@@ -712,14 +706,6 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return new BigDecimal(bi, scale);
     }
 
-    private static long remainderUnsignedDividedBy10(long dividend, long quotient) {
-        /*
-         * See Long.remainderUnsigned(long, long) for explanation
-         */
-        final long r = dividend - quotient * 10;
-        return r - ((~(r - 10) >> (Long.SIZE - 1)) & 10);
-    }
-
     private int bitLength() {
         if (bytes0 != 0) {
             return 64 * 4 - Long.numberOfLeadingZeros(bytes0);
@@ -747,9 +733,5 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    private long combineLongHalves(long high, long low) {
-        return (high << 32) | (low & LOW_MASK);
     }
 }
