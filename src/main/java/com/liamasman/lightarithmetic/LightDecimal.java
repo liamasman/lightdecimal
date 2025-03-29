@@ -426,7 +426,6 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
         return 0;
     }
 
-
     /**
      * Returns a new LightDecimal whose value is the sum of the two
      * operands. The original operands are not modified.
