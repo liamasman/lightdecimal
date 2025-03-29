@@ -185,7 +185,7 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
             return;
         }
 
-        if (cmp > 0) //This is the bigger number
+        if (cmp > 0) //a is the bigger number
         {
             subtractBytes(aBytes0, aBytes1, aBytes2, aBytes3, bBytes0, bBytes1, bBytes2, bBytes3);
         } else {
@@ -344,50 +344,54 @@ public class LightDecimal implements Comparable<LightDecimal>, Cloneable {
     }
 
     /**
-     * Subtract the given bytes from our bytes.
-     * Our bytes must represent the larger number.
+     * Subtract the little bytes from the big bytes.
+     * Big bytes must represent the larger number.
      * Adapted from BigInteger
      */
     private void subtractBytes(
             final long bigBytes0, final long bigBytes1, final long bigBytes2, final long bigBytes3,
             final long littleBytes0, final long littleBytes1, final long littleBytes2, final long littleBytes3) {
+        long difference, big, little;
 
-        long difference = 0;
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 7);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 7);
+        difference = big - little;
+        bytes3 = difference;
 
-        // Subtract common parts of both numbers
-        for (int index = 7; index >= 0; index--) {
-            long big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, index);
-            long little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, index);
-            difference = big - little + (difference >> 32);
-            switch (index) {
-                case 0:
-                    this.bytes0 = (difference << 32) | getLowBits(this.bytes0);
-                    break;
-                case 1:
-                    this.bytes0 = (this.bytes0 & HIGH_MASK) | getLowBits(difference);
-                    break;
-                case 2:
-                    this.bytes1 = (difference << 32) | getLowBits(this.bytes1);
-                    break;
-                case 3:
-                    this.bytes1 = (this.bytes1 & HIGH_MASK) | getLowBits(difference);
-                    break;
-                case 4:
-                    this.bytes2 = (difference << 32) | getLowBits(this.bytes2);
-                    break;
-                case 5:
-                    this.bytes2 = (this.bytes2 & HIGH_MASK) | getLowBits(difference);
-                    break;
-                case 6:
-                    this.bytes3 = (difference << 32) | getLowBits(this.bytes3);
-                    break;
-                case 7:
-                    this.bytes3 = (this.bytes3 & HIGH_MASK) | getLowBits(difference);
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
-        }
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 6);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 6);
+        difference = big - little + (difference >> 32);
+        bytes3 = (difference << 32) | getLowBits(bytes3);
+
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 5);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 5);
+        difference = big - little + (difference >> 32);
+        bytes2 = getLowBits(difference);
+
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 4);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 4);
+        difference = big - little + (difference >> 32);
+        bytes2 = (difference << 32) | getLowBits(bytes2);
+
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 3);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 3);
+        difference = big - little + (difference >> 32);
+        bytes1 = getLowBits(difference);
+
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 2);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 2);
+        difference = big - little + (difference >> 32);
+        bytes1 = (difference << 32) | getLowBits(bytes1);
+
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 1);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 1);
+        difference = big - little + (difference >> 32);
+        bytes0 = getLowBits(difference);
+
+        big = get32BitWordFromLongsWithWordIndex(bigBytes0, bigBytes1, bigBytes2, bigBytes3, 0);
+        little = get32BitWordFromLongsWithWordIndex(littleBytes0, littleBytes1, littleBytes2, littleBytes3, 0);
+        difference = big - little + (difference >> 32);
+        bytes0 = (difference << 32) | getLowBits(bytes0);
     }
 
     private long get32BitWordFromLongsWithWordIndex(
